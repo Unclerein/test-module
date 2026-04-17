@@ -175,23 +175,61 @@ class NPCGeneratorApp extends Application {
   }
 }
 
+// ── Ouvrir le générateur (singleton) ────────────────────────────────────────────
+function openGenerator() {
+  new NPCGeneratorApp().render(true);
+}
+
+// ── Injection du bouton dans la barre latérale ───────────────────────────────────
+function addGeneratorButton(app, html) {
+  if (!game.user.isGM) return;
+
+  // html peut être un objet jQuery (v11/v12) ou un HTMLElement (v13+)
+  const root = (html instanceof jQuery) ? html[0] : html;
+  if (!root) return;
+  if (root.querySelector(".dhnpc-btn")) return;
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "dhnpc-btn";
+  btn.innerHTML = `<i class="fas fa-user-plus"></i> Générer un PNJ`;
+  btn.addEventListener("click", openGenerator);
+
+  // Essai dans l'ordre : footer dédié → footer générique → boutons d'action → racine
+  const target =
+    root.querySelector(".directory-footer") ??
+    root.querySelector("footer") ??
+    root.querySelector(".header-actions") ??
+    root.querySelector(".action-buttons") ??
+    root;
+
+  target.prepend(btn);
+}
+
 // ── Hooks ────────────────────────────────────────────────────────────────────────
 Hooks.once("init", () => {
   console.log("Daggerheart NPC Generator | Initialisé.");
+
+  // Raccourci clavier configurable (Contrôles → Daggerheart NPC Generator)
+  game.keybindings.register("daggerheart-npc-generator", "openGenerator", {
+    name: "Ouvrir le Générateur de PNJ",
+    hint: "Ouvre le formulaire de génération de PNJ Daggerheart",
+    editable: [{ key: "KeyG", modifiers: ["Alt"] }],
+    onDown: () => {
+      if (!game.user.isGM) return false;
+      openGenerator();
+      return true;
+    },
+    restricted: true,
+    precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
+  });
 });
 
 Hooks.once("ready", () => {
-  game.daggerheartNPCGenerator = {
-    open: () => new NPCGeneratorApp().render(true),
-  };
+  game.daggerheartNPCGenerator = { open: openGenerator };
 });
 
-// Bouton dans le répertoire des journaux
-Hooks.on("renderJournalDirectory", (app, html) => {
-  if (!game.user.isGM) return;
-  if (html.find(".dhnpc-btn").length) return;
-
-  const btn = $(`<button class="dhnpc-btn"><i class="fas fa-user-plus"></i> Générer un PNJ</button>`);
-  btn.on("click", () => new NPCGeneratorApp().render(true));
-  html.find(".directory-footer").prepend(btn);
-});
+// v11/v12 : hook jQuery classique
+Hooks.on("renderJournalDirectory", addGeneratorButton);
+// v13+ : si la sidebar migre vers ApplicationV2
+Hooks.on("renderJournalEntries", addGeneratorButton);
