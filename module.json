@@ -1,0 +1,16 @@
+{
+  "id": "daggerheart-npc-generator",
+  "title": "Daggerheart — Générateur de PNJ",
+  "description": "Génère aléatoirement des PNJ pour Daggerheart : nom, sexe, race, âge, description physique, tic de langage et détail intéressant. Le résultat est créé directement comme entrée de journal.",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "11",
+    "verified": "12"
+  },
+  "authors": [
+    { "name": "Unclerein" }
+  ],
+  "esmodules": ["scripts/main.js"],
+  "styles": ["styles/module.css"],
+  "flags": {}
+}

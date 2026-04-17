@@ -1,0 +1,105 @@
+/* ── Fenêtre de l'application ─────────────────────────────────────────────── */
+#daggerheart-npc-generator .window-content {
+  padding: 12px;
+  background: #1a1a2e;
+}
+
+/* ── Formulaire ──────────────────────────────────────────────────────────────── */
+.dhnpc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dhnpc-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Modesto Condensed", serif;
+  font-size: 1.1em;
+  color: #c9a84c;
+  border-bottom: 1px solid #c9a84c44;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+.dhnpc-header i {
+  font-size: 1.2em;
+}
+
+.dhnpc-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dhnpc-form label {
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9a9aaa;
+}
+
+.dhnpc-form select {
+  background: #0f0f1e;
+  border: 1px solid #3a3a5a;
+  color: #ddd;
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 0.95em;
+}
+
+.dhnpc-form select:focus {
+  border-color: #c9a84c;
+  outline: none;
+}
+
+/* ── Bouton générer ──────────────────────────────────────────────────────────── */
+.dhnpc-form button#dhnpc-generate {
+  margin-top: 4px;
+  background: #c9a84c;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-weight: bold;
+  font-size: 0.95em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: background 0.15s;
+}
+
+.dhnpc-form button#dhnpc-generate:hover {
+  background: #e0c060;
+}
+
+.dhnpc-form button#dhnpc-generate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Bouton dans le répertoire des journaux ──────────────────────────────────── */
+.dhnpc-btn {
+  width: 100%;
+  margin-bottom: 6px;
+  background: #1a1a2e;
+  color: #c9a84c;
+  border: 1px solid #c9a84c55;
+  border-radius: 4px;
+  padding: 5px 8px;
+  cursor: pointer;
+  font-size: 0.85em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.dhnpc-btn:hover {
+  background: #c9a84c;
+  color: #1a1a2e;
+  border-color: #c9a84c;
+}
