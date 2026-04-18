@@ -29,9 +29,89 @@ const RACE_LABELS = {
   gueule_libre: "Gueule Libre",
 };
 
-// ── Génération de la description physique ────────────────────────────────────────
+// ── Noms des tables de tirage ─────────────────────────────────────────────────────
+// 14 tables de noms (2 par race) + 7 tables de description (1 par race)
+// + 1 table de tics + 1 table de détails = 23 tables au total
+const TABLE_NAMES = {
+  nom: {
+    humain:       { m: "DHNPC | Noms | Humain | Masculin",       f: "DHNPC | Noms | Humain | Féminin"       },
+    nain:         { m: "DHNPC | Noms | Nain | Masculin",         f: "DHNPC | Noms | Nain | Féminin"         },
+    elfe:         { m: "DHNPC | Noms | Elfe | Masculin",         f: "DHNPC | Noms | Elfe | Féminin"         },
+    drakeide:     { m: "DHNPC | Noms | Drakeide | Masculin",     f: "DHNPC | Noms | Drakeide | Féminin"     },
+    fee:          { m: "DHNPC | Noms | Fée | Masculin",          f: "DHNPC | Noms | Fée | Féminin"          },
+    animorphe:    { m: "DHNPC | Noms | Animorphe | Masculin",    f: "DHNPC | Noms | Animorphe | Féminin"    },
+    gueule_libre: { m: "DHNPC | Noms | Gueule Libre | Masculin", f: "DHNPC | Noms | Gueule Libre | Féminin" },
+  },
+  description: {
+    humain:       "DHNPC | Description | Humain",
+    nain:         "DHNPC | Description | Nain",
+    elfe:         "DHNPC | Description | Elfe",
+    drakeide:     "DHNPC | Description | Drakeide",
+    fee:          "DHNPC | Description | Fée",
+    animorphe:    "DHNPC | Description | Animorphe",
+    gueule_libre: "DHNPC | Description | Gueule Libre",
+  },
+  tic:    "DHNPC | Tics de Langage",
+  detail: "DHNPC | Détails Intéressants",
+};
+
+// Liste à plat de tous les noms de tables
+const ALL_TABLE_NAMES = [
+  ...Object.values(TABLE_NAMES.nom).flatMap(r => [r.m, r.f]),
+  ...Object.values(TABLE_NAMES.description),
+  TABLE_NAMES.tic,
+  TABLE_NAMES.detail,
+];
+
+// ── Création automatique des tables de tirage ─────────────────────────────────────
+async function ensureTables() {
+  if (!game.user.isGM) return;
+
+  let folder = game.folders.find(f => f.name === "Daggerheart NPC Generator" && f.type === "RollTable");
+  if (!folder) {
+    folder = await Folder.create({
+      name: "Daggerheart NPC Generator",
+      type: "RollTable",
+      color: "#c9a84c",
+    });
+  }
+
+  const existing = new Set(game.tables.map(t => t.name));
+  const missing  = ALL_TABLE_NAMES.filter(name => !existing.has(name));
+  if (!missing.length) return;
+
+  const resultType = CONST.TABLE_RESULT_TYPES?.TEXT ?? 0;
+  await RollTable.createDocuments(missing.map(name => ({
+    name,
+    formula: "1d1",
+    folder: folder.id,
+    replacement: true,
+    displayRoll: false,
+    // Entrée vide placeholder — à remplacer par vos propres résultats
+    results: [{ type: resultType, text: "—", range: [1, 1], drawn: false }],
+  })));
+
+  ui.notifications.info(
+    `Daggerheart NPC Generator | ${missing.length} table(s) créée(s) dans le dossier « Daggerheart NPC Generator ».`
+  );
+}
+
+// ── Tirage sur une table (retourne null si vide → fallback) ──────────────────────
+async function rollTable(name) {
+  const table = game.tables.find(t => t.name === name);
+  if (!table || table.results.size === 0) return null;
+  try {
+    const { results } = await table.roll();
+    const text = results?.[0]?.text?.trim();
+    return (text && text !== "—") ? text : null;
+  } catch {
+    return null;
+  }
+}
+
+// ── Génération de la description physique (fallback si table vide) ───────────────
 function buildDescription(race, sexe) {
-  const e = sexe === "f" ? "e" : "";
+  const e  = sexe === "f" ? "e" : "";
   const il = sexe === "m" ? "Il" : "Elle";
 
   if (race === "gueule_libre") {
@@ -66,42 +146,41 @@ function buildDescription(race, sexe) {
     return `Drakeide ${stature}, aux écailles ${ecailles} et aux yeux ${yeux}. Sa queue et ses crêtes dorsales bougent légèrement selon son humeur. On note également ${trait}.`;
   }
 
-  // Humain, nain, elfe
   const statures = {
     humain: ["de taille moyenne","grand"+e,"petit"+e,"de haute stature"],
     nain:   ["trapu"+e+" et robuste","compact"+e+" et musculeux(se)","court"+e+" sur pattes mais large d'épaules","solide comme un pilier"],
     elfe:   ["élancé"+e+" et gracieux(se)","d'une finesse presque irréelle","grand"+e+" et léger"+e+" comme une plume","mince et longiligne"],
   };
-
-  const stature  = pick(statures[race] ?? statures.humain);
-  const cheveux  = pick(CHEVEUX_COULEUR[race] ?? CHEVEUX_COULEUR.humain);
-  const yeux     = pick(COULEURS_YEUX[race]   ?? COULEURS_YEUX.humain);
-  const trait    = pick(TRAITS_DISTINCTIFS);
+  const stature = pick(statures[race] ?? statures.humain);
+  const cheveux = pick(CHEVEUX_COULEUR[race] ?? CHEVEUX_COULEUR.humain);
+  const yeux    = pick(COULEURS_YEUX[race]   ?? COULEURS_YEUX.humain);
+  const trait   = pick(TRAITS_DISTINCTIFS);
   return `Personnage ${stature}, aux cheveux ${cheveux} et aux yeux ${yeux}. On remarque ${trait}.`;
 }
 
 // ── Génération complète du PNJ ───────────────────────────────────────────────────
-function generateNPC(sexePref, racePref) {
-  const race     = racePref === "aleatoire" ? pick(RACES) : racePref;
-  const sexe     = sexePref === "aleatoire" ? pick(["m","f"]) : sexePref;
+// Chaque champ essaie la table de tirage correspondante en priorité.
+// Si la table est vide (entrée "—") ou absente, fallback sur les données codées.
+async function generateNPC(sexePref, racePref) {
+  const race      = racePref === "aleatoire" ? pick(RACES) : racePref;
+  const sexe      = sexePref === "aleatoire" ? pick(["m","f"]) : sexePref;
   const sexeLabel = sexe === "m" ? "Masculin" : "Féminin";
 
-  const pool = NOMS[race]?.[sexe] ?? NOMS.humain[sexe];
-  const nom  = pick(pool);
+  const nom = await rollTable(TABLE_NAMES.nom[race]?.[sexe])
+    ?? pick(NOMS[race]?.[sexe] ?? NOMS.humain[sexe]);
 
   const ageRange = AGES[race] ?? AGES.humain;
   const age      = randInt(ageRange.min, ageRange.max);
 
+  const description = await rollTable(TABLE_NAMES.description[race])
+    ?? buildDescription(race, sexe);
+
+  const tic    = await rollTable(TABLE_NAMES.tic)    ?? pick(TICS_LANGAGE);
+  const detail = await rollTable(TABLE_NAMES.detail) ?? pick(DETAILS_INTERESSANTS);
+
   return {
-    nom,
-    race,
-    raceLabel:  RACE_LABELS[race] ?? race,
-    sexe,
-    sexeLabel,
-    age,
-    description: buildDescription(race, sexe),
-    tic:         pick(TICS_LANGAGE),
-    detail:      pick(DETAILS_INTERESSANTS),
+    nom, race, raceLabel: RACE_LABELS[race] ?? race,
+    sexe, sexeLabel, age, description, tic, detail,
   };
 }
 
@@ -139,52 +218,48 @@ async function createJournalEntry(npc) {
   ui.notifications.info(`PNJ « ${npc.nom} » généré avec succès.`);
 }
 
+// ── Ouvrir le générateur ─────────────────────────────────────────────────────────
+function openGenerator() {
+  new NPCGeneratorApp().render(true);
+}
+
 // ── Application ──────────────────────────────────────────────────────────────────
 class NPCGeneratorApp extends Application {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
-      id:       "daggerheart-npc-generator",
-      title:    "Générateur de PNJ — Daggerheart",
-      template: "modules/daggerheart-npc-generator/templates/generator.hbs",
-      width:    360,
-      height:   "auto",
+      id:        "daggerheart-npc-generator",
+      title:     "Générateur de PNJ — Daggerheart",
+      template:  "modules/daggerheart-npc-generator/templates/generator.hbs",
+      width:     360,
+      height:    "auto",
       resizable: false,
     });
   }
 
-  getData() {
-    return {};
-  }
+  getData() { return {}; }
 
   activateListeners(html) {
     super.activateListeners(html);
 
     html.find("#dhnpc-generate").on("click", async (ev) => {
       ev.preventDefault();
-      const btn  = html.find("#dhnpc-generate");
-      btn.prop("disabled", true).find("i").attr("class","fas fa-spinner fa-spin");
-
+      const btn = html.find("#dhnpc-generate");
+      btn.prop("disabled", true).find("i").attr("class", "fas fa-spinner fa-spin");
       try {
         const sexe = html.find('[name="sexe"]').val();
         const race = html.find('[name="race"]').val();
-        await createJournalEntry(generateNPC(sexe, race));
+        await createJournalEntry(await generateNPC(sexe, race));
       } finally {
-        btn.prop("disabled", false).find("i").attr("class","fas fa-dice");
+        btn.prop("disabled", false).find("i").attr("class", "fas fa-dice");
       }
     });
   }
-}
-
-// ── Ouvrir le générateur (singleton) ────────────────────────────────────────────
-function openGenerator() {
-  new NPCGeneratorApp().render(true);
 }
 
 // ── Injection du bouton dans la barre latérale ───────────────────────────────────
 function addGeneratorButton(app, html) {
   if (!game.user.isGM) return;
 
-  // html peut être un objet jQuery (v11/v12) ou un HTMLElement (v13+)
   const root = (html instanceof jQuery) ? html[0] : html;
   if (!root) return;
   if (root.querySelector(".dhnpc-btn")) return;
@@ -195,7 +270,6 @@ function addGeneratorButton(app, html) {
   btn.innerHTML = `<i class="fas fa-user-plus"></i> Générer un PNJ`;
   btn.addEventListener("click", openGenerator);
 
-  // Essai dans l'ordre : footer dédié → footer générique → boutons d'action → racine
   const target =
     root.querySelector(".directory-footer") ??
     root.querySelector("footer") ??
@@ -210,7 +284,6 @@ function addGeneratorButton(app, html) {
 Hooks.once("init", () => {
   console.log("Daggerheart NPC Generator | Initialisé.");
 
-  // Raccourci clavier configurable (Contrôles → Daggerheart NPC Generator)
   game.keybindings.register("daggerheart-npc-generator", "openGenerator", {
     name: "Ouvrir le Générateur de PNJ",
     hint: "Ouvre le formulaire de génération de PNJ Daggerheart",
@@ -225,11 +298,10 @@ Hooks.once("init", () => {
   });
 });
 
-Hooks.once("ready", () => {
+Hooks.once("ready", async () => {
   game.daggerheartNPCGenerator = { open: openGenerator };
+  await ensureTables();
 });
 
-// v11/v12 : hook jQuery classique
 Hooks.on("renderJournalDirectory", addGeneratorButton);
-// v13+ : si la sidebar migre vers ApplicationV2
-Hooks.on("renderJournalEntries", addGeneratorButton);
+Hooks.on("renderJournalEntries",   addGeneratorButton);
