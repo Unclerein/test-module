@@ -63,7 +63,48 @@ const ALL_TABLE_NAMES = [
   TABLE_NAMES.detail,
 ];
 
-// ── Création automatique des tables de tirage ─────────────────────────────────────
+// ── Création / recréation des tables de tirage ───────────────────────────────────
+// Les noms sont lus depuis npc-data.js (constante NOMS).
+// Les descriptions restent vides : à remplir dans l'interface Foundry.
+// Pour mettre à jour les tables après avoir édité npc-data.js,
+// cliquer sur « Recréer les tables » dans le formulaire du générateur.
+
+function makeResults(entries) {
+  const resultType = CONST.TABLE_RESULT_TYPES?.TEXT ?? 0;
+  if (!entries?.length) {
+    return [{ type: resultType, text: "—", range: [1, 1], drawn: false }];
+  }
+  return entries.map((text, i) => ({
+    type: resultType, text, range: [i + 1, i + 1], drawn: false,
+  }));
+}
+
+// Associe chaque nom de table à son contenu initial.
+// ──────────────────────────────────────────────────────────────────────────────────
+// Pour ajouter vos noms : éditez la constante NOMS dans scripts/npc-data.js,
+// puis cliquez sur « Recréer les tables » dans le générateur.
+// ──────────────────────────────────────────────────────────────────────────────────
+function buildTableContents() {
+  const contents = {};
+
+  // Noms — remplis depuis NOMS dans npc-data.js
+  for (const [race, genders] of Object.entries(TABLE_NAMES.nom)) {
+    contents[genders.m] = NOMS[race]?.m ?? [];
+    contents[genders.f] = NOMS[race]?.f ?? [];
+  }
+
+  // Descriptions — vides (à remplir manuellement dans Foundry)
+  for (const name of Object.values(TABLE_NAMES.description)) {
+    contents[name] = [];
+  }
+
+  // Tics et détails — remplis depuis npc-data.js
+  contents[TABLE_NAMES.tic]    = TICS_LANGAGE;
+  contents[TABLE_NAMES.detail] = DETAILS_INTERESSANTS;
+
+  return contents;
+}
+
 async function ensureTables() {
   if (!game.user.isGM) return;
 
@@ -80,20 +121,34 @@ async function ensureTables() {
   const missing  = ALL_TABLE_NAMES.filter(name => !existing.has(name));
   if (!missing.length) return;
 
-  const resultType = CONST.TABLE_RESULT_TYPES?.TEXT ?? 0;
-  await RollTable.createDocuments(missing.map(name => ({
-    name,
-    formula: "1d1",
-    folder: folder.id,
-    replacement: true,
-    displayRoll: false,
-    // Entrée vide placeholder — à remplacer par vos propres résultats
-    results: [{ type: resultType, text: "—", range: [1, 1], drawn: false }],
-  })));
+  const contents = buildTableContents();
+  await RollTable.createDocuments(missing.map(name => {
+    const results = makeResults(contents[name]);
+    return {
+      name,
+      formula: `1d${results.length}`,
+      folder: folder.id,
+      replacement: true,
+      displayRoll: false,
+      results,
+    };
+  }));
 
   ui.notifications.info(
-    `Daggerheart NPC Generator | ${missing.length} table(s) créée(s) dans le dossier « Daggerheart NPC Generator ».`
+    `Daggerheart NPC Generator | ${missing.length} table(s) créée(s) dans « Daggerheart NPC Generator ».`
   );
+}
+
+// Supprime toutes les tables DHNPC puis les recrée depuis npc-data.js.
+// À utiliser après avoir modifié les tableaux de noms dans le code.
+async function recreateTables() {
+  if (!game.user.isGM) return;
+  const toDelete = game.tables.filter(t => ALL_TABLE_NAMES.includes(t.name));
+  if (toDelete.length) {
+    await RollTable.deleteDocuments(toDelete.map(t => t.id));
+  }
+  await ensureTables();
+  ui.notifications.info("Daggerheart NPC Generator | Tables recréées depuis npc-data.js.");
 }
 
 // ── Tirage sur une table (retourne null si vide → fallback) ──────────────────────
@@ -251,6 +306,17 @@ class NPCGeneratorApp extends Application {
         await createJournalEntry(await generateNPC(sexe, race));
       } finally {
         btn.prop("disabled", false).find("i").attr("class", "fas fa-dice");
+      }
+    });
+
+    html.find("#dhnpc-recreate").on("click", async (ev) => {
+      ev.preventDefault();
+      const btn = html.find("#dhnpc-recreate");
+      btn.prop("disabled", true).find("i").attr("class", "fas fa-spinner fa-spin");
+      try {
+        await recreateTables();
+      } finally {
+        btn.prop("disabled", false).find("i").attr("class", "fas fa-sync");
       }
     });
   }

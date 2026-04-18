@@ -81,6 +81,40 @@
   cursor: not-allowed;
 }
 
+/* ── Séparateur ──────────────────────────────────────────────────────────────── */
+.dhnpc-sep {
+  border: none;
+  border-top: 1px solid #3a3a5a;
+  margin: 6px 0;
+}
+
+/* ── Bouton recréer tables ───────────────────────────────────────────────────── */
+.dhnpc-form button.dhnpc-recreate {
+  background: transparent;
+  color: #9a9aaa;
+  border: 1px solid #3a3a5a;
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 0.8em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.dhnpc-form button.dhnpc-recreate:hover {
+  color: #c9a84c;
+  border-color: #c9a84c55;
+}
+
+.dhnpc-form button.dhnpc-recreate:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ── Bouton dans le répertoire des journaux ──────────────────────────────────── */
 .dhnpc-btn {
   width: 100%;
