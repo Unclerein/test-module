@@ -175,6 +175,75 @@ async function rollTable(name) {
   }
 }
 
+// ── Génération de description physique par IA (Claude API) ──────────────────────
+async function generateDescriptionWithAI(race, sexe, apiKey) {
+  // Pré-tirage de l'animal / insecte pour les races qui en ont besoin
+  let sujet = null;
+  if (race === "animorphe") {
+    sujet = await rollTable(TABLE_NAMES.animal.animorphe)
+      ?? (ANIMAUX_ANIMORPHE.length ? pick(ANIMAUX_ANIMORPHE) : null);
+  } else if (race === "gueule_libre") {
+    sujet = await rollTable(TABLE_NAMES.animal.gueule_libre)
+      ?? (ANIMAUX_GUEULE_LIBRE.length ? pick(ANIMAUX_GUEULE_LIBRE) : null);
+  } else if (race === "fee") {
+    sujet = await rollTable(TABLE_NAMES.insecte)
+      ?? (INSECTES_FEE.length ? pick(INSECTES_FEE) : null);
+  }
+
+  const sexeWord = sexe === "m" ? "masculin" : "féminin";
+
+  const CONTEXTES = {
+    humain:       "Humain(e). Inclus : morphologie, couleur des yeux, couleur et coupe des cheveux, vêtements.",
+    nain:         "Nain(e) trapu(e). Inclus : morphologie, couleur des yeux, couleur et coupe des cheveux (éventuellement une barbe), vêtements.",
+    elfe:         "Elfe aux traits fins. Inclus : morphologie, couleur des yeux, couleur et coupe des cheveux, vêtements.",
+    drakeide:     "Draconide humanoïde écailleux. Inclus : morphologie, couleur des écailles, vêtements.",
+  };
+
+  let contexte = CONTEXTES[race];
+  if (!contexte) {
+    if (race === "animorphe") {
+      const a = sujet ?? "un animal (choisis-en un adapté au médiéval-fantastique)";
+      contexte = `Humanoïde avec une tête de ${a}. Inclus : morphologie du corps, détails de la tête animale, vêtements.`;
+    } else if (race === "gueule_libre") {
+      const a = sujet ?? "un animal parlant (choisis-en un adapté au médiéval-fantastique)";
+      contexte = `Animal intelligent bipède — un(e) ${a}. Inclus : apparence animale distinctive, morphologie, vêtements ou accessoires.`;
+    } else if (race === "fee") {
+      const i = sujet ?? "un insecte (choisis-en un adapté au médiéval-fantastique)";
+      contexte = `Fée hybride humanoïde / ${i}. Inclus : traits de l'insecte visibles (ailes, antennes, carapace…), morphologie, vêtements.`;
+    } else {
+      contexte = "Inclus : morphologie générale, traits distinctifs de la race, vêtements.";
+    }
+  }
+
+  const prompt = `Écris une description physique courte (2 à 3 phrases) pour un personnage de JDR médiéval-fantastique.
+Sexe : ${sexeWord}
+Race / Type : ${contexte}
+
+Règles :
+- Registre littéraire, concis, visuel.
+- Accorde les adjectifs en genre selon le sexe ${sexeWord}.
+- Réponds uniquement avec la description, sans titre ni commentaire.`;
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 250,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const data = await response.json();
+  return data.content[0].text.trim();
+}
+
 // ── Accord grammatical (e) / (ve) / (se) selon le sexe ──────────────────────────
 function accord(text, sexe) {
   return sexe === "f"
@@ -182,8 +251,19 @@ function accord(text, sexe) {
     : text.replace(/\(ve\)/g, "").replace(/\(se\)/g, "").replace(/\(e\)/g, "");
 }
 
-// ── Génération de la description physique (fallback si table vide) ───────────────
+// ── Génération de la description physique ────────────────────────────────────────
+// Essaie l'IA Claude si une clé API est configurée, sinon génération aléatoire.
 async function buildDescription(race, sexe) {
+  const apiKey = game.settings.get("daggerheart-npc-generator", "anthropicApiKey")?.trim();
+  if (apiKey) {
+    try {
+      return await generateDescriptionWithAI(race, sexe, apiKey);
+    } catch (err) {
+      console.warn("Daggerheart NPC Generator | Erreur API Claude, génération aléatoire.", err);
+    }
+  }
+
+  // Génération aléatoire (fallback)
   const e  = sexe === "f" ? "e" : "";
   const il = sexe === "m" ? "Il" : "Elle";
 
@@ -359,6 +439,15 @@ function addGeneratorButton(app, html) {
 // ── Hooks ────────────────────────────────────────────────────────────────────────
 Hooks.once("init", () => {
   console.log("Daggerheart NPC Generator | Initialisé.");
+
+  game.settings.register("daggerheart-npc-generator", "anthropicApiKey", {
+    name: "Clé API Anthropic (Claude)",
+    hint: "Clé API pour générer les descriptions physiques par IA. Laissez vide pour la génération aléatoire.",
+    scope: "world",
+    config: true,
+    type: String,
+    default: "",
+  });
 
   game.keybindings.register("daggerheart-npc-generator", "openGenerator", {
     name: "Ouvrir le Générateur de PNJ",
