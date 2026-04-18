@@ -41,63 +41,125 @@ export const AGES = {
   gueule_libre: { min: 3,   max: 22  },
 };
 
-// ── Animaux pour fées et animorphes ─────────────────────────────────────────────
-export const INSECTES = [
-  "fourmi","abeille","guêpe","papillon","scarabée",
-  "mante religieuse","libellule","grillon","phasme","luciole","frelon","cigale",
+// ── Animaux & insectes (RollTables) ──────────────────────────────────────────────
+// Ajoutez vos entrées ici, puis cliquez sur « Recréer les tables » dans le
+// générateur — elles seront automatiquement chargées dans les RollTables.
+
+// Animaux pour les Animorphes (tête animale sur corps humanoïde)
+export const ANIMAUX_ANIMORPHE = [
+  // "loup", "renard", "ours", "cerf", "corbeau", "chat", "rat", "tigre",
+  // "sanglier", "lynx", "aigle", "bouc", "loutre", "cheval", "lapin", ...
 ];
 
-export const ANIMAUX_TETE = [
-  "loup","ours","renard","cerf","lapin","corbeau","chat","rat",
-  "cheval","tigre","sanglier","lynx","bouc","aigle","loutre",
+// Animaux pour les Gueules Libres (animal intelligent doué de parole)
+export const ANIMAUX_GUEULE_LIBRE = [
+  // "renard", "corbeau", "rat", "loup", "chien", "chat", "ours",
+  // "aigle", "tortue", "singe", "lièvre", "blaireau", "castor", ...
 ];
 
-export const ANIMAUX_CORPS = [
-  "chien","chat","rat","corbeau","renard","ours","serpent",
-  "aigle","tortue","singe","lièvre","blaireau","castor","loutre","écureuil",
+// Insectes pour les Fées (hybride humanoïde/insecte)
+export const INSECTES_FEE = [
+  // "abeille", "papillon", "libellule", "mante religieuse",
+  // "luciole", "scarabée", "grillon", "phasme", "frelon", ...
 ];
 
-// ── Éléments de description physique ────────────────────────────────────────────
-export const COULEURS_ECAILLES = ["vertes","rouges","bleues","noires","dorées","argentées","violettes","brunes","cuivrées","blanc nacré"];
+// ── Description physique — éléments générés aléatoirement ───────────────────────
+// Notation (e) / (ve) / (se) : remplacé automatiquement selon le sexe du PNJ.
+
+export const FORMES_PHYSIQUES = [
+  "musclé(e) et bien bâti(e)",
+  "mince et élancé(e)",
+  "maigre, presque décharné(e)",
+  "corpulent(e) et massif(ve)",
+  "trapu(e) et robuste",
+  "athlétique",
+  "frêle et délicat(e)",
+  "de corpulence moyenne",
+  "grand(e) et filiforme",
+  "petit(e) et compact(e)",
+  "noueux(se) et endurci(e) par le travail",
+  "potelé(e) et jovial(e)",
+  "longiligne",
+  "large d'épaules",
+  "fort(e) comme un bœuf",
+  "souple et agile d'apparence",
+  "lourd(e) et imposant(e)",
+  "fin(e) comme une lame",
+  "râblé(e)",
+  "sec(sèche) et nerveux(se)",
+];
+
+export const VETEMENTS = [
+  "des vêtements de voyage usés mais fonctionnels",
+  "une tenue sobre de couleur sombre, bien entretenue",
+  "des habits de marchand un peu trop grands",
+  "une armure légère en cuir griffée par l'usage",
+  "des vêtements colorés à la mode de sa région",
+  "une robe de laine grossière aux couleurs ternes",
+  "un manteau élimé rapiécé en plusieurs endroits",
+  "une tenue propre et soignée qui contraste avec son allure générale",
+  "des habits de travail tachés et robustes",
+  "une veste de cuir ornée de rivets et de broderies",
+  "des vêtements luxueux mais légèrement défraîchis",
+  "une tunique simple et une cape de voyage poussiéreuse",
+  "des habits militaires reconvertis pour la vie civile",
+  "une tenue de guilde reconnaissable à son insigne",
+  "des vêtements artisanaux aux motifs géométriques colorés",
+  "une longue robe de cérémonie portée complètement hors contexte",
+  "des habits entièrement noirs, pratiques et discrets",
+  "des vêtements disparates mélangés sans souci de style",
+  "une tenue de cuir et tissu de bonne facture",
+  "des habits de nomade brodés de motifs tribaux",
+  "des vêtements trop chauds pour la saison",
+  "une tenue trop légère pour le climat",
+  "un tablier de travail par-dessus des habits ordinaires",
+  "une tenue rapiécée avec des tissus de couleurs incompatibles",
+  "des habits propres mais entièrement sans personnalité",
+];
+
+export const COUPES_CHEVEUX = [
+  "courts et en brosse",
+  "longs et libres dans le dos",
+  "attachés en queue de cheval",
+  "mi-longs et en désordre",
+  "rasés sur les côtés, longs sur le dessus",
+  "tressés en une natte dans le dos",
+  "bouclés et volumineux",
+  "lisses et plaqués en arrière",
+  "rasés à ras",
+  "coiffés en chignon serré",
+  "ébouriffés",
+  "ornés d'une longue tresse latérale",
+  "courts et frisés",
+  "soigneusement peignés en arrière",
+  "en dreadlocks",
+  "agrémentés de petites tresses et de perles",
+  "cachés sous un chapeau ou un capuchon",
+  "à moitié rasés d'un côté",
+  "en couronne de tresses",
+  "hirsutes et partant dans tous les sens",
+  "coupés net au niveau des épaules",
+  "retenus par un bandeau ou un foulard",
+  "striés de mèches décolorées",
+];
+
+// ── Couleurs (générées aléatoirement) ───────────────────────────────────────────
+export const COULEURS_ECAILLES = [
+  "vertes","rouges","bleues","noires","dorées","argentées",
+  "violettes","brunes","cuivrées","blanc nacré","gris ardoise","orange brûlé",
+];
 
 export const COULEURS_YEUX = {
-  humain:    ["bruns","verts","bleus","gris","noisette","noirs"],
-  nain:      ["marron foncé","noirs","gris acier","ambre","brun doré"],
-  elfe:      ["dorés","violets","argentés","bleu glacier","vert émeraude","bleu-gris","ambre pâle"],
-  drakeide:  ["rouges","oranges","jaunes à pupille fendue","ambre","dorés à pupille fendue"],
-  fee:       ["à facettes iridescentes","noirs et brillants comme des perles","composés et multicolores","d'un bleu électrique"],
-  animorphe: ["perçants et animaux","d'un jaune vif","d'un brun profond","noirs et expressifs"],
-  gueule_libre: ["vifs et intelligents","d'un ambre chaud","noirs et brillants","d'un vert lumineux"],
+  humain: ["bruns","verts","bleus","gris","noisette","noirs","ambre","bleu-gris"],
+  nain:   ["marron foncé","noirs","gris acier","ambre","brun doré","noisette"],
+  elfe:   ["dorés","violets","argentés","bleu glacier","vert émeraude","bleu-gris","ambre pâle","lilas"],
 };
 
-export const CHEVEUX_COULEUR = {
-  humain:    ["noirs","châtains","blonds","roux","gris","blancs","bruns foncés","poivre et sel"],
-  nain:      ["noirs","châtains","roux flamboyants","poivre et sel","blancs","brun foncé"],
-  elfe:      ["argentés","dorés","noirs de jais","blanc platine","blond vénitien","cuivrés","noir bleuté"],
+export const COULEURS_CHEVEUX = {
+  humain: ["noirs","châtains","blonds","roux","gris","blancs","bruns foncés","poivre et sel"],
+  nain:   ["noirs","châtains","roux flamboyants","poivre et sel","blancs","brun foncé","gris acier"],
+  elfe:   ["argentés","dorés","noirs de jais","blanc platine","blond vénitien","cuivrés","noir bleuté","cendre"],
 };
-
-export const TRAITS_DISTINCTIFS = [
-  "une longue cicatrice qui barre le visage",
-  "des tatouages tribaux sur les avant-bras",
-  "un œil de verre d'une couleur inhabituelle",
-  "trois doigts manquants à la main gauche",
-  "des cheveux prématurément blancs",
-  "une légère claudication",
-  "des taches de naissance formant une constellation sur le cou",
-  "des dents en or",
-  "une oreille partiellement arrachée",
-  "des mains couvertes de brûlures anciennes",
-  "un nez cassé mal ressoudé",
-  "des yeux de deux couleurs différentes",
-  "des lunettes épaisses retenues par une ficelle",
-  "un sourire auquel il manque une dent de devant",
-  "des runes tatouées sur tout le corps",
-  "des rides profondes qui témoignent d'une vie difficile",
-  "une perruque mal ajustée portée avec fierté",
-  "des ongles toujours impeccablement manucurés malgré tout",
-  "une voix inhabituellement grave pour son apparence",
-  "un unique sourcil broussailleux barrant son front",
-];
 
 // ── Tics de langage ──────────────────────────────────────────────────────────────
 export const TICS_LANGAGE = [

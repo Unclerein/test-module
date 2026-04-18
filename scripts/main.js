@@ -1,10 +1,9 @@
 import {
   NOMS, AGES,
-  INSECTES, ANIMAUX_TETE, ANIMAUX_CORPS,
-  COULEURS_YEUX, CHEVEUX_COULEUR, COULEURS_ECAILLES,
-  TRAITS_DISTINCTIFS,
-  TICS_LANGAGE,
-  DETAILS_INTERESSANTS,
+  ANIMAUX_ANIMORPHE, ANIMAUX_GUEULE_LIBRE, INSECTES_FEE,
+  FORMES_PHYSIQUES, VETEMENTS, COUPES_CHEVEUX,
+  COULEURS_YEUX, COULEURS_CHEVEUX, COULEURS_ECAILLES,
+  TICS_LANGAGE, DETAILS_INTERESSANTS,
 } from "./npc-data.js";
 
 // ── Utilitaires ──────────────────────────────────────────────────────────────────
@@ -30,8 +29,7 @@ const RACE_LABELS = {
 };
 
 // ── Noms des tables de tirage ─────────────────────────────────────────────────────
-// 14 tables de noms (2 par race) + 7 tables de description (1 par race)
-// + 1 table de tics + 1 table de détails = 23 tables au total
+// 14 noms + 7 descriptions + 1 tics + 1 détails + 3 animaux/insectes = 26 tables
 const TABLE_NAMES = {
   nom: {
     humain:       { m: "DHNPC | Noms | Humain | Masculin",       f: "DHNPC | Noms | Humain | Féminin"       },
@@ -53,14 +51,22 @@ const TABLE_NAMES = {
   },
   tic:    "DHNPC | Tics de Langage",
   detail: "DHNPC | Détails Intéressants",
+  // Remplies depuis npc-data.js (ANIMAUX_ANIMORPHE, ANIMAUX_GUEULE_LIBRE, INSECTES_FEE)
+  animal: {
+    animorphe:    "DHNPC | Animal | Animorphe",
+    gueule_libre: "DHNPC | Animal | Gueule Libre",
+  },
+  insecte: "DHNPC | Insecte | Fée",
 };
 
-// Liste à plat de tous les noms de tables
 const ALL_TABLE_NAMES = [
   ...Object.values(TABLE_NAMES.nom).flatMap(r => [r.m, r.f]),
   ...Object.values(TABLE_NAMES.description),
   TABLE_NAMES.tic,
   TABLE_NAMES.detail,
+  TABLE_NAMES.animal.animorphe,
+  TABLE_NAMES.animal.gueule_libre,
+  TABLE_NAMES.insecte,
 ];
 
 // ── Création / recréation des tables de tirage ───────────────────────────────────
@@ -101,6 +107,11 @@ function buildTableContents() {
   // Tics et détails — remplis depuis npc-data.js
   contents[TABLE_NAMES.tic]    = TICS_LANGAGE;
   contents[TABLE_NAMES.detail] = DETAILS_INTERESSANTS;
+
+  // Animaux et insectes — remplis depuis npc-data.js (vides par défaut)
+  contents[TABLE_NAMES.animal.animorphe]    = ANIMAUX_ANIMORPHE;
+  contents[TABLE_NAMES.animal.gueule_libre] = ANIMAUX_GUEULE_LIBRE;
+  contents[TABLE_NAMES.insecte]             = INSECTES_FEE;
 
   return contents;
 }
@@ -164,53 +175,52 @@ async function rollTable(name) {
   }
 }
 
+// ── Accord grammatical (e) / (ve) / (se) selon le sexe ──────────────────────────
+function accord(text, sexe) {
+  return sexe === "f"
+    ? text.replace(/\(ve\)/g, "ve").replace(/\(se\)/g, "se").replace(/\(e\)/g, "e")
+    : text.replace(/\(ve\)/g, "").replace(/\(se\)/g, "").replace(/\(e\)/g, "");
+}
+
 // ── Génération de la description physique (fallback si table vide) ───────────────
-function buildDescription(race, sexe) {
+async function buildDescription(race, sexe) {
   const e  = sexe === "f" ? "e" : "";
   const il = sexe === "m" ? "Il" : "Elle";
 
+  const forme     = accord(pick(FORMES_PHYSIQUES), sexe);
+  const vetements = pick(VETEMENTS);
+
   if (race === "gueule_libre") {
-    const animal = pick(ANIMAUX_CORPS);
-    const yeux   = pick(COULEURS_YEUX.gueule_libre);
-    const pelage = pick(["sombre et lustré","clair et fourni","tacheté","strié de gris","d'un roux vif","uniforme et dense"]);
-    return `${il} est un${e} ${animal} intelligent${e}, doué${e} de parole et d'une raison égale à celle des humanoïdes. Son pelage ou plumage est ${pelage}, et ses yeux ${yeux} trahissent une intelligence vive. ${il} se déplace avec une aisance surprenante, oscillant selon les situations entre instinct animal et posture civilisée.`;
+    const animal = await rollTable(TABLE_NAMES.animal.gueule_libre)
+      ?? (ANIMAUX_GUEULE_LIBRE.length ? pick(ANIMAUX_GUEULE_LIBRE) : "créature inconnue");
+    return `${il} est un${e} ${animal} intelligent${e}, doué${e} de parole. `
+      + `De constitution ${forme}, ${il.toLowerCase()} porte ${vetements}.`;
   }
 
   if (race === "animorphe") {
-    const animal  = pick(ANIMAUX_TETE);
-    const feature = pick(["une queue touffue","des griffes rétractiles","des oreilles dressées très expressives","un pelage court sur les avant-bras","une fine fourrure sur la nuque"]);
-    const trait   = pick(TRAITS_DISTINCTIFS);
-    const yeux    = pick(COULEURS_YEUX.animorphe);
-    return `Corps humanoïde athlétique surmonté d'une tête de ${animal} aux yeux ${yeux}. ${il} possède également ${feature}, héritage de sa nature animale. On remarque aussi ${trait}.`;
+    const animal = await rollTable(TABLE_NAMES.animal.animorphe)
+      ?? (ANIMAUX_ANIMORPHE.length ? pick(ANIMAUX_ANIMORPHE) : "créature inconnue");
+    return `Corps humanoïde ${forme} surmonté d'une tête de ${animal}. `
+      + `${il} porte ${vetements}.`;
   }
 
   if (race === "fee") {
-    const insecte = pick(INSECTES);
-    const aile    = pick(["des ailes translucides aux reflets arc-en-ciel","une paire d'élytres rigides","de fines ailes membraneuses","des ailes tachetées comme celles d'un papillon","des ailes d'un noir profond"]);
-    const detail  = pick(["des antennes sensibles qui frémissent en permanence","une carapace partielle sur les épaules et le dos","des reflets chitineux sur la peau","de fins membres supplémentaires atrophiés dans le dos"]);
-    const yeux    = pick(COULEURS_YEUX.fee);
-    const trait   = pick(TRAITS_DISTINCTIFS);
-    return `Hybride humanoïde d'${insecte}, fluet${e} et d'une légèreté déconcertante. ${il} arbore ${aile} ainsi que ${detail}. Ses yeux sont ${yeux}. On remarque par ailleurs ${trait}.`;
+    const insecte = await rollTable(TABLE_NAMES.insecte)
+      ?? (INSECTES_FEE.length ? pick(INSECTES_FEE) : "insecte inconnu");
+    return `Hybride humanoïde d'${insecte}, ${forme}. ${il} porte ${vetements}.`;
   }
 
   if (race === "drakeide") {
     const ecailles = pick(COULEURS_ECAILLES);
-    const yeux     = pick(COULEURS_YEUX.drakeide);
-    const stature  = pick(["imposant"+e+" et musculeux(se)","massif"+e+" comme un roc","grand"+e+" et puissant"+e,"de stature intimidante"]);
-    const trait    = pick(TRAITS_DISTINCTIFS);
-    return `Drakeide ${stature}, aux écailles ${ecailles} et aux yeux ${yeux}. Sa queue et ses crêtes dorsales bougent légèrement selon son humeur. On note également ${trait}.`;
+    return `Drakeide ${forme}, aux écailles ${ecailles}. ${il} porte ${vetements}.`;
   }
 
-  const statures = {
-    humain: ["de taille moyenne","grand"+e,"petit"+e,"de haute stature"],
-    nain:   ["trapu"+e+" et robuste","compact"+e+" et musculeux(se)","court"+e+" sur pattes mais large d'épaules","solide comme un pilier"],
-    elfe:   ["élancé"+e+" et gracieux(se)","d'une finesse presque irréelle","grand"+e+" et léger"+e+" comme une plume","mince et longiligne"],
-  };
-  const stature = pick(statures[race] ?? statures.humain);
-  const cheveux = pick(CHEVEUX_COULEUR[race] ?? CHEVEUX_COULEUR.humain);
-  const yeux    = pick(COULEURS_YEUX[race]   ?? COULEURS_YEUX.humain);
-  const trait   = pick(TRAITS_DISTINCTIFS);
-  return `Personnage ${stature}, aux cheveux ${cheveux} et aux yeux ${yeux}. On remarque ${trait}.`;
+  // Humain, nain, elfe
+  const couleurYeux    = pick(COULEURS_YEUX[race]    ?? COULEURS_YEUX.humain);
+  const couleurCheveux = pick(COULEURS_CHEVEUX[race]  ?? COULEURS_CHEVEUX.humain);
+  const coupeCheveux   = pick(COUPES_CHEVEUX);
+  return `Personnage ${forme}, aux yeux ${couleurYeux} et aux cheveux ${couleurCheveux} ${coupeCheveux}. `
+    + `${il} porte ${vetements}.`;
 }
 
 // ── Génération complète du PNJ ───────────────────────────────────────────────────
@@ -228,7 +238,7 @@ async function generateNPC(sexePref, racePref) {
   const age      = randInt(ageRange.min, ageRange.max);
 
   const description = await rollTable(TABLE_NAMES.description[race])
-    ?? buildDescription(race, sexe);
+    ?? await buildDescription(race, sexe);
 
   const tic    = await rollTable(TABLE_NAMES.tic)    ?? pick(TICS_LANGAGE);
   const detail = await rollTable(TABLE_NAMES.detail) ?? pick(DETAILS_INTERESSANTS);
